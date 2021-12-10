@@ -2,15 +2,26 @@ import socket
 import threading
 import signal
 import sys
+import os
+from urllib.parse import unquote
 
 
+proxy = 'http://103.216.82.20:6666'
+
+os.environ['http_proxy'] = proxy 
+os.environ['HTTP_PROXY'] = proxy
+os.environ['https_proxy'] = proxy
+os.environ['HTTPS_PROXY'] = proxy
+
+print("OKAY..")
+#your code goes here.............
 
 config =  {
-            "HOST_NAME" : "127.0.0.1",
-            "BIND_PORT" : 8000,
+            "HOST_NAME" : "103.216.82.20",
+            "BIND_PORT" : 6666,
             "MAX_REQUEST_LEN" : 4096,
-            "CONNECTION_TIMEOUT" : 10
-            
+            "CONNECTION_TIMEOUT" : 10,
+            "BLACKLIST_DOMAINS":["http://testasp.vulnweb.com/", "http://testasp.vulnweb.com/"]
           }
 
 
@@ -21,6 +32,7 @@ class Server:
     #and to listene to a max of 10 clients at a time
 
     def __init__(self, config):
+
         signal.signal(signal.SIGINT, self.shutdown)     # Shutdown on Ctrl+C
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)             # Create a TCP socket
         self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)    # Re-use the socket
@@ -40,8 +52,10 @@ class Server:
 
         while True:
             (clientSocket, client_address) = self.serverSocket.accept()   # Establish the connection
-            self.proxy_thread(clientSocket, client_address)
             
+            d = threading.Thread(name=self._getClientName(client_address), target=self.proxy_thread, args=(clientSocket, client_address))
+            d.setDaemon(True)
+            d.start()
         self.shutdown(0,0)
 
 
@@ -56,13 +70,25 @@ class Server:
         request = conn.recv(config['MAX_REQUEST_LEN'])        # get the request from browser
         first_line = (request.split(b"\n")[0])       # parse the first line
         url = first_line.split(b' ')[1]                        # get url
-
+                # Check if the host:port is blacklisted
+        
         print(url)                       
-
+        url = unquote(url)
+        #print("3" + url)
+        for i in range(0, len(config['BLACKLIST_DOMAINS'])):
+            print("LOL" + str(i) +  config['BLACKLIST_DOMAINS'][i])
+            if str(config['BLACKLIST_DOMAINS'][i]) in url:
+                conn.close()
+                print("Connection close for blocked Domain")
+                print("1" + config['BLACKLIST_DOMAINS'][i])
+                print("2" + url)
+                return
         # find the webserver and port
+        
+        url = url.encode('utf8')
         http_pos = url.find(b"://")  # find pos of ://
 
-        print(http_pos) 
+        #print(http_pos) 
 
         if (http_pos==-1):
             temp = url
