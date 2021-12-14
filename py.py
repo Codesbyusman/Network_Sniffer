@@ -1,9 +1,11 @@
 from os import access
 import scapy.all as scapy
+from argparse import RawTextHelpFormatter
 import sys
 import argparse
 from scapy.layers import http, inet, dhcp, dns, tls
 from scapy.layers.l2 import Ether
+import time
 
 
 def sniff(interface, filters):
@@ -330,27 +332,35 @@ def process_sniffed_packets(packet):
         xpath_inj = xpath_injection_test(packet)
         if login_info:
             print(b"nn[+] Possible username/password >" + login_info + b"nn")
+            time.sleep(4)
         if html_inj:
             print(
                 b"HTML Injection Attack In the Above Request {-} String: " + html_inj)
+            time.sleep(4)
         if sql_inj:
             print(
                 b"SQL Injection Attack In the Above Request {-} String: " + sql_inj)
+            time.sleep(4)
         if js_inj:
             print(
                 b"XSS Attack Attempt In the Above Request {-} String: " + js_inj)
+            time.sleep(4)
         if(xxe_inj):
             print(
                 b"XEE Attack Attempt In the Above Request {-} String: " + xxe_inj)
         if(comm_inj):
+            time.sleep(4)
             print(
                 b"Command Injection In the Above Request {-} String: " + comm_inj)
+            time.sleep(4)
         if(xslt_inj):
             print(
                 b"XSLT Detected In the Above Request {-} String: " + xslt_inj)
+            time.sleep(4)
         if(xpath_inj):
             print(
                 b"XPATH Detected In the Above Request {-} String: " + xpath_inj)
+            time.sleep(4)
             # If the packet has layer then
     if packet.haslayer(http.HTTPResponse):
         # print(packet[inet.TCP].show())
@@ -358,7 +368,7 @@ def process_sniffed_packets(packet):
         print("[+] HTTP Response >> " +
               (packet[http.HTTPResponse].Status_Code).decode("utf-8"))
         if inet.IP in packet:
-
+            
             print("[+]Source Ip : " + packet[inet.IP].src)
             print("[+]Source Ip : " + packet[inet.IP].dst)
         if inet.TCP in packet:
@@ -367,13 +377,15 @@ def process_sniffed_packets(packet):
             print("[+]Sequence Number : " + str(packet[inet.TCP].seq))
             print("[+]Acknowledge Number : " + str(packet[inet.TCP].ack))
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
 parser.add_argument("-i", "--interface", dest="interface",
-                        help="Specify interface on which to 	sniff packets")
+                        help="Specify interface on which to sniff packets")
 parser.add_argument("-f", "--filters", dest="filters",
-                        help="Specify The filters for the usage")
+                        help="Specify The filters for the usage\nList of Filters:\n   1) port [Number]  .. \nExample \n port 443 or port 80 \n 2) port Range [Range]..\n Example \n portrange 1000-5000 \n 3) tcp \n 4)udp \n5) icmp \n You can use combinations as well.")
+
 arguments = parser.parse_args()
 if not (arguments.filters):
-    arguments.filters = "host"
-print("Filter is: " + arguments.filters)
+    arguments.filters = None
+if arguments.filters != None:
+    print("Filter is: " + arguments.filters)
 sniff(arguments.interface, arguments.filters)
